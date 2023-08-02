@@ -1,0 +1,22 @@
+.slider {
+  width: 100%;
+  position: relative;
+}
+.slider__line {
+  width: auto;
+  height: auto;
+  display: flex;
+}
+.slider__line-wrap {
+  width: 100%;
+  overflow: hidden;
+}
+.slider__line--transition {
+  transition: all 1s ease;
+}
+.slider__line--dragable {
+  cursor: grab;
+}
+.slider__btn:hover {
+  cursor: pointer;
+}
