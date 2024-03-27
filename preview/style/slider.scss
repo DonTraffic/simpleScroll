@@ -1,27 +1,45 @@
 .slider{
+    max-width: 100%;
     width: 100%;
     position: relative;
 
-    &__line{
+    &-line{
         width: auto;
         height: auto;
         display: flex;
-        
-        &-wrap{
-            width: 100%;
-            overflow: hidden;
+
+        &--transition{
+            transition: all 1s ease;
+        }
+    }
+
+    &-btn:hover{
+        cursor: pointer;
+    }
+}
+
+.scroll{
+    width: 100%;
+    border: 1px solid #cccccc00;
+    overflow: hidden;
+
+    transition: .4s ease;
+
+    &:hover{
+        border: 1px solid #cccccc;
+    }
+
+    &-thumb{
+        background-color: #cccccc;
+        height: 100%;
+        width: 100%;
+
+        &:hover{
+            cursor: grab;
         }
 
         &--transition{
             transition: all 1s ease;
         }
-        
-        &--dragable{
-            cursor: grab;
-        }
-    }
-
-    &__btn:hover{
-        cursor: pointer;
     }
 }

@@ -1,118 +1,143 @@
-// Инициализируем все слайдеры
-document.querySelectorAll('.slider').forEach(slider => {
+
+let slidersData = {}
+
+function rollSlider(anchorSlider) {
+    if( anchorSlider.matrix > 0 ) anchorSlider.matrix = 0
+
+    let maxWidth = -( 
+        (anchorSlider.items.length * anchorSlider.items[0].offsetWidth) - anchorSlider.width + 
+        (window.innerWidth < anchorSlider.width ? anchorSlider.padding*2 : 0) + 
+        anchorSlider.gap * (anchorSlider.items.length-1) 
+    ) 
+
+    if( anchorSlider.matrix < maxWidth) anchorSlider.matrix = maxWidth
+
+    anchorSlider.sliderLine.style.transform = `translate(${anchorSlider.matrix}px)`
+}
+
+function sliderCount(anchorSlider) {
+    let count
+
+    for (const key in anchorSlider.setting) {
+        if (!count && window.innerWidth <= key) {
+            count = anchorSlider.setting[key]
+        }
+    } if (!count) count = anchorSlider.setting[0]
+
+    return count <= 
+        anchorSlider.items.length ? count : 
+        anchorSlider.items.length
+}
+
+function sliderTouch(event, anchorSlider) {
+    event.preventDefault()
+    anchorSlider.sliderLine.classList.remove('slider__line--transition')
+    anchorSlider.matrix = new WebKitCSSMatrix(window.getComputedStyle(anchorSlider.sliderLine).transform).m41;
+    let shiftX = event.clientX - anchorSlider.matrix
+
+    document.addEventListener('mousemove', onMouseMove)
+    document.addEventListener('mouseup', onMouseUp)
+
+    function onMouseMove(e) { 
+        let value = e.clientX - shiftX
+        anchorSlider.sliderLine.style.transform = `translate(${value}px)` 
+        anchorSlider.matrix = value
+
+        anchorSlider.sliderLine.style.pointerEvents = 'none'
+    }
+
+    function onMouseUp(e) {
+        document.removeEventListener('mousemove', onMouseMove)
+        document.removeEventListener('mouseup', onMouseUp)
+
+        anchorSlider.sliderLine.classList.add('slider__line--transition')
+        anchorSlider.sliderLine.style.pointerEvents = 'all'
+
+        rollSlider(anchorSlider)
+    }
+}
+
+function sliderUpdate(sliderId) {
+    let anchorSlider = slidersData[sliderId]
+
+    anchorSlider.items = anchorSlider.slider.querySelectorAll('.slider__line-item')
+    anchorSlider.countMax = sliderCount(anchorSlider)
+    anchorSlider.width = anchorSlider.sliderWrap.offsetWidth
+    anchorSlider.widthItem = (anchorSlider.width / anchorSlider.countMax) - anchorSlider.gap + anchorSlider.gap/anchorSlider.countMax
+
+    anchorSlider.sliderLine.style.width = `${(anchorSlider.width * anchorSlider.items.length) / anchorSlider.countMax}px`
+    anchorSlider.items.forEach( item => {
+        item.style.width = `${anchorSlider.widthItem}px`
+        item.style.minWidth = `${anchorSlider.widthItem}px`
+    })
+
+    anchorSlider.sliderLine.classList.add('slider__line--transition')
+
+    rollSlider(anchorSlider)
+}
+
+// Инициализируем отдельный слайдер
+function sliderInit(sliderId) {
+    slidersData[sliderId] = {}
+    let anchorSlider = slidersData[sliderId]
 
     // достаём важные блоки
-    const items = slider.querySelectorAll('.slider__line-item')
-    const sliderLine = slider.querySelector('.slider__line')
-    const sliderWrap = slider.querySelector('.slider__line-wrap')
-    const btnPrev = slider.querySelector('.slider__btn-prev')
-    const btnNext = slider.querySelector('.slider__btn-next')
+    anchorSlider.slider = document.querySelector(`#${sliderId}`)
+    anchorSlider.items = anchorSlider.slider.querySelectorAll('.slider__line-item')
+    anchorSlider.sliderLine = anchorSlider.slider.querySelector('.slider__line')
+    anchorSlider.sliderWrap = anchorSlider.slider.querySelector('.slider__line-wrap')
+    anchorSlider.btnPrev = anchorSlider.slider.querySelector('.slider__btn-prev')
+    anchorSlider.btnNext = anchorSlider.slider.querySelector('.slider__btn-next')
 
     // достаём настройки
-    const setting = slider.getAttribute('items-count') ?
-        JSON.parse(slider.getAttribute('items-count')) : {0: 1} ;
-    const widthWrap = slider.getAttribute('width-wrap') ? 
-        slider.getAttribute('width-wrap') : 1024 ;
-    const drag = slider.getAttribute('drag') ? 
-        slider.getAttribute('drag') : 'true' ;
-    const gap = slider.getAttribute('gap') ?
-        JSON.parse(slider.getAttribute('gap')) : {0: 1} ;
-    const padding = slider.getAttribute('padding') ?
-        JSON.parse(slider.getAttribute('padding')) : '0' ;
+    anchorSlider.setting = anchorSlider.slider.getAttribute('items-count') ?
+        JSON.parse(anchorSlider.slider.getAttribute('items-count')) : {0: 1} ;
+    anchorSlider.drag = anchorSlider.slider.getAttribute('drag') ? 
+        anchorSlider.slider.getAttribute('drag') : 'true' ;
+    anchorSlider.gap = anchorSlider.slider.getAttribute('gap') ?
+        JSON.parse(anchorSlider.slider.getAttribute('gap')) : {0: 1} ;
+    anchorSlider.padding = anchorSlider.slider.getAttribute('padding') ?
+        JSON.parse(anchorSlider.slider.getAttribute('padding')) : '0' ;
+    anchorSlider.countMax = sliderCount(anchorSlider)
+    anchorSlider.width = anchorSlider.slider.offsetWidth
+    anchorSlider.widthItem = 0
+    anchorSlider.matrix = new WebKitCSSMatrix(window.getComputedStyle(anchorSlider.sliderLine).transform).m41;
 
-    let countMax = sliderCount()
-    let width = 0
-    let widthItem = 0
-    let matrix = new WebKitCSSMatrix(window.getComputedStyle(sliderLine).transform).m41;
+    if (window.innerWidth < anchorSlider.width) anchorSlider.sliderLine.style.padding = `0 ${anchorSlider.padding}px`
+    anchorSlider.sliderLine.style.gap = `${anchorSlider.gap}px`
 
-    function rollSlider() {
-        if( matrix > 0 ) matrix = 0
-
-        let maxWidth = -( 
-            (items.length*items[0].offsetWidth) - width + 
-            (window.innerWidth < widthWrap ? padding*2 : 0) + 
-            gap * (items.length-1) 
-        ) 
-
-        if( matrix < maxWidth) matrix = maxWidth
-
-        sliderLine.style.transform = `translate(${matrix}px)`
-    }
-
-    function sliderCount() {
-        let count
-
-        for (const key in setting) {
-            if (!count && window.innerWidth <= key) {
-                count = setting[key]
-            }
-        }
-
-        return count ? count : setting[0]
-    }
-
-    function init () {
-        countMax = sliderCount()
-
-        if (window.innerWidth < widthWrap) sliderLine.style.padding = `0 ${padding}px`
-        sliderLine.style.gap = `${gap}px`
-
-        width = sliderWrap.offsetWidth
-        widthItem = (width / countMax) - gap + gap/countMax
-
-        sliderLine.style.width = `${(width * items.length) / countMax}px`
-        items.forEach( item => {
-            item.style.width = `${widthItem}px`
-            item.style.minWidth = `${widthItem}px`
-        })
-
-        sliderLine.classList.add('slider__line--transition')
-
-        rollSlider()
-    }
-
-    window.addEventListener('resize', init)
-    init()
-
-    if (btnPrev) {btnPrev.addEventListener('click', e => {
-        matrix = matrix + widthItem
-        rollSlider()
+    if (anchorSlider.btnPrev) {anchorSlider.btnPrev.addEventListener('click', e => {
+        anchorSlider.matrix = anchorSlider.matrix + anchorSlider.widthItem
+        rollSlider(anchorSlider)
     })}
 
-    if (btnNext) {btnNext.addEventListener('click', e => {
-        matrix = matrix - widthItem
-        rollSlider()
+    if (anchorSlider.btnNext) {anchorSlider.btnNext.addEventListener('click', e => {
+        anchorSlider.matrix = anchorSlider.matrix - anchorSlider.widthItem
+        rollSlider(anchorSlider)
     })}
 
-    if (drag != 'false') sliderLine.onmousedown = (event) => sliderTouch(event)
+    if (anchorSlider.drag != 'false') anchorSlider.sliderLine.onmousedown = (event) => sliderTouch(event, anchorSlider)
+    anchorSlider.sliderLine.ondragstart = () => { return false }
 
-    function sliderTouch(event) {
-        event.preventDefault()
-        sliderLine.classList.remove('slider__line--transition')
+    // 
+    sliderUpdate(sliderId)
+    onresize = (e) => sliderUpdate(sliderId);
+}
 
-        matrix = new WebKitCSSMatrix(window.getComputedStyle(sliderLine).transform).m41;
+// запускаем инициализацию всех слайдеров
+function allSliderInit () {
+    document.querySelectorAll('.slider').forEach(slider => {
+        sliderInit(slider.id)
+    })
+}
 
-        let shiftX = event.clientX - matrix
 
-        document.addEventListener('mousemove', onMouseMove)
-        document.addEventListener('mouseup', onMouseUp)
 
-        function onMouseMove(e) { 
-            let value = e.clientX - shiftX
-            sliderLine.style.transform = `translate(${value}px)` 
-            matrix = value
-        }
-
-        function onMouseUp(e) {
-            document.removeEventListener('mousemove', onMouseMove)
-            document.removeEventListener('mouseup', onMouseUp)
-
-            sliderLine.classList.add('slider__line--transition')
-
-            rollSlider()
-        }
-    }
-
-    sliderLine.ondragstart = () => { return false }
-
-})
+const slider = {
+    allSliderInit,
+    sliderInit,
+    sliderUpdate,
+    slidersData
+}
+  
+export  { slider }
