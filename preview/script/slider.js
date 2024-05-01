@@ -1,5 +1,16 @@
 const scrollsData = {}
 
+function changeShadow(scrollMax, slider, move) {
+    if (slider.shadowPrev) {
+        slider.shadowPrev.style.opacity = 1
+        if( move <= 0 ) slider.shadowPrev.style.opacity = 0
+    }
+    if (slider.shadowNext) {
+        slider.shadowNext.style.opacity = 1
+        if( move >= scrollMax ) slider.shadowNext.style.opacity = 0
+    }
+}
+
 function sliderValidate(data) {
     if(
         data.slider.direction == 'horizontal' && 
@@ -11,47 +22,67 @@ function sliderValidate(data) {
     ) data.slider.scrollMax = 0
 }
 
-function sliderUpdate(data) {
-    // достаём важные блоки (slider)
-    let sliderLink = data.slider
-    sliderLink.btnPrev = document.querySelector(`.${data.name}-btn-prev`)
-    sliderLink.btnNext = document.querySelector(`.${data.name}-btn-next`)
-    sliderLink.shadowPrev = document.querySelector(`.${data.name}-shadow-prev`)
-    sliderLink.shadowNext = document.querySelector(`.${data.name}-shadow-next`)
-    sliderLink.direction = sliderLink.elem.getAttribute('direction') ? 
-        sliderLink.elem.getAttribute('direction') : 
-        (sliderLink.line.offsetWidth > sliderLink.elem.offsetWidth ? 'horizontal' : 'vertical') ;
-    sliderLink.styles = {
-        padding: sliderLink.direction == 'horizontal' ? 
-            parseInt(window.getComputedStyle(sliderLink.elem).paddingLeft, 10) + parseInt(window.getComputedStyle(sliderLink.elem).paddingRight, 10) :
-            parseInt(window.getComputedStyle(sliderLink.elem).paddingTop, 10) + parseInt(window.getComputedStyle(sliderLink.elem).paddingBottom, 10) ,
-        gap: window.getComputedStyle(sliderLink.line).gap != 'normal' ?
-            parseInt(window.getComputedStyle(sliderLink.line).gap, 10) : 0,
-    }
-    sliderLink.points = sliderLink.elem.getAttribute('points') ? JSON.parse(sliderLink.elem.getAttribute('points')) : false ;
-    if(sliderLink.points) {
-        sliderLink.itemsCount = getItemCount(sliderLink)
-        sliderLink.itemWidth = (
-            sliderLink.elem.offsetWidth - sliderLink.styles.padding - 
-            sliderLink.styles.gap * (sliderLink.itemsCount > 0 ? sliderLink.itemsCount-1 : sliderLink.itemsCount)
-        ) / sliderLink.itemsCount   
-        sliderLink.items.forEach(item => { item.style.width = `${sliderLink.itemWidth}px` });
-    }
-    sliderLink.direction = sliderLink.elem.getAttribute('direction') ? 
-        sliderLink.elem.getAttribute('direction') : 
-        (sliderLink.line.offsetWidth > sliderLink.elem.offsetWidth ? 'horizontal' : 'vertical') ;
-    
-    sliderLink.size = {
-        elem: sliderLink.direction == 'horizontal' ? sliderLink.elem.offsetWidth : sliderLink.elem.offsetHeight,
-        line: (sliderLink.direction == 'horizontal' ? sliderLink.line.offsetWidth : sliderLink.line.offsetHeight) + sliderLink.styles.padding
-    }
-    sliderLink.scrollMax = sliderLink.size.line - sliderLink.size.elem
-    sliderLink.move = 0
+function sliderUpdateDeep(data) {
+    // достаём важные блоки (sliders)
+    document.querySelectorAll(`.${data.name}-slider`).forEach((slider, index) => {
+        scrollsData[data.name].sliders[index] = {}
+        let sliderLink = scrollsData[data.name].sliders[index]
+
+        sliderLink.elem = document.querySelector(`.${data.name}-slider--${index}`)
+        sliderLink.line = sliderLink.elem.querySelector(`.${data.name}-line`)
+        sliderLink.line.classList.add('slider-line--transition')
+        sliderLink.items = sliderLink.elem.querySelectorAll(`.${data.name}-item`)
+        sliderLink.shadowPrev = document.querySelector(`.${data.name}-shadow-prev`) ?
+            sliderLink.elem.querySelector(`.${data.name}-shadow-prev`) :
+            document.querySelector(`.${data.name}-shadow-prev--${index}`)
+        sliderLink.shadowNext = document.querySelector(`.${data.name}-shadow-next`) ?
+            sliderLink.elem.querySelector(`.${data.name}-shadow-next`) :
+            document.querySelector(`.${data.name}-shadow-next--${index}`)
+
+        sliderLink.revert = sliderLink.elem.getAttribute('revert')
+            sliderLink.revert = sliderLink.revert == 'true' ? true : false ;
+        sliderLink.direction = sliderLink.elem.getAttribute('direction')
+            sliderLink.direction = sliderLink.direction == 'horizontal' || sliderLink.direction == 'vertical' ? 
+                sliderLink.direction : 'horizontal';
+        sliderLink.styles = window.getComputedStyle(sliderLink.elem)
+        sliderLink.styles = {
+            padding: sliderLink.direction == 'horizontal' ? 
+                parseInt(sliderLink.styles.paddingLeft, 10) + parseInt(sliderLink.styles.paddingRight, 10) :
+                parseInt(sliderLink.styles.paddingTop, 10) + parseInt(sliderLink.styles.paddingBottom, 10) ,
+            gap: window.getComputedStyle(sliderLink.line).gap != 'normal' ?
+                parseInt(window.getComputedStyle(sliderLink.line).gap, 10) : 0,
+        }
+        sliderLink.points = sliderLink.elem.getAttribute('points') ? 
+            JSON.parse(sliderLink.elem.getAttribute('points')) : false ;
+        if(sliderLink.points) {
+            sliderLink.itemsCount = getItemCount(sliderLink)
+            sliderLink.itemSize = (
+                (sliderLink.direction == 'horizontal' ? sliderLink.elem.offsetWidth : sliderLink.elem.offsetHeight) -
+                sliderLink.styles.padding - sliderLink.styles.gap * 
+                (sliderLink.itemsCount > 0 ? sliderLink.itemsCount-1 : sliderLink.itemsCount)
+            ) / sliderLink.itemsCount   
+            sliderLink.items.forEach(item => { 
+                sliderLink.direction == 'horizontal' ? 
+                    item.style.width = `${sliderLink.itemSize}px` :
+                    item.style.height = `${sliderLink.itemSize}px` 
+            });
+        }
+        sliderLink.size = {
+            elem: sliderLink.direction == 'horizontal' ? 
+                sliderLink.elem.offsetWidth : sliderLink.elem.offsetHeight,
+            line: (sliderLink.direction == 'horizontal' ? 
+                sliderLink.line.offsetWidth : sliderLink.line.offsetHeight) + sliderLink.styles.padding
+        }
+        sliderLink.scrollMax = sliderLink.size.line - sliderLink.size.elem
+        sliderLink.step = index ? sliderLink.scrollMax/scrollsData[data.name].sliders[0].scrollMax : 1
+    });
 
     // достаём важные блоки (scroll)
     if(document.querySelector(`.${data.name}-scroll`)) {
         scrollsData[data.name].scroll = {}
         let scrollLink = scrollsData[data.name].scroll
+        let sliderLink = scrollsData[data.name].sliders[0]
+
         scrollLink.elem = document.querySelector(`.${data.name}-scroll`)
         scrollLink.thumb = document.querySelector(`.${data.name}-thumb`)
         scrollLink.thumb.classList.add('scroll-thumb--transition')
@@ -59,33 +90,39 @@ function sliderUpdate(data) {
             scrollLink.elem.getAttribute('direction') : 
             (scrollLink.elem.offsetWidth > scrollLink.elem.offsetHeight ? 'horizontal' : 'vertical') ;
         scrollLink.size = {}
-            scrollLink.size.elem = scrollLink.direction == 'horizontal' ? scrollLink.elem.offsetWidth : scrollLink.elem.offsetHeight ;
+            scrollLink.size.elem = scrollLink.direction == 'horizontal' ? 
+                scrollLink.elem.offsetWidth : scrollLink.elem.offsetHeight ;
             scrollLink.size.thumb = (scrollLink.size.elem/100) * ((sliderLink.size.elem*100) / sliderLink.size.line)
         scrollLink.direction == 'horizontal' ? 
             scrollLink.thumb.style.width = `${scrollLink.size.thumb}px` :
             scrollLink.thumb.style.height = `${scrollLink.size.thumb}px` ;
         scrollLink.scrollMax = scrollLink.size.elem - scrollLink.size.thumb
-        scrollLink.move = 0
-
-        data.global.step = scrollLink.scrollMax/sliderLink.scrollMax
+        scrollLink.step = scrollLink.scrollMax/sliderLink.scrollMax
     } else {scrollsData[data.name].scroll = false}
 
-    sliderValidate(data)
+    // достаём все кнопки
+    scrollsData[data.name].btns = {
+        prev: document.querySelectorAll(`.${data.name}-btn-prev`),
+        next: document.querySelectorAll(`.${data.name}-btn-next`)
+    }
+
+    // sliderValidate(data)
     setEvents(data)
     rollScroll(data)
 }
 
 function updateScrollAll() {
     document.querySelectorAll('.DTScroll').forEach((scroll) => {
-        sliderUpdate(scrollsData[scroll.id])
+        sliderUpdateDeep(scrollsData[scroll.id])
     })
 }
 
-function scrollWheel(event, data) {
+function scrollWheel(event, data, revert) {
     event.preventDefault()
 
-    data.slider.move -= event.deltaY
-    if(data.scroll) data.scroll.move = -data.slider.move * data.global.step
+    revert ? 
+        data.global.move -= event.deltaY : 
+        data.global.move += event.deltaY ;
 
     rollScroll(data)
 }
@@ -93,34 +130,39 @@ function scrollWheel(event, data) {
 function scrollButton(data, direction) {
     event.preventDefault()
 
-    let localMove = data.slider.elem.offsetWidth - data.slider.styles.padding + 
-        data.slider.styles.gap * (data.slider.itemsCount > 0 ? data.slider.itemsCount-1 : data.slider.itemsCount)
+    let slider = data.sliders[0]
+    let localMove = (slider.direction == 'horizontal' ? 
+        slider.elem.offsetWidth : slider.elem.offsetHeight)
+        + slider.styles.padding/2
 
-    direction ? data.slider.move -= localMove : data.slider.move += localMove ;
-    if(data.scroll) data.scroll.move = -data.slider.move * data.global.step
+    direction ? data.global.move += localMove : data.global.move -= localMove ;
 
     rollScroll(data)
 }
 
 function rollScroll(data) {
-    if( data.slider.move > 0 ) data.slider.move = 0
-    if( data.scroll && data.scroll.move < 0 ) data.scroll.move = 0
+    if( data.global.move < 0 ) data.global.move = 0
+    if( data.global.move > data.sliders[0].scrollMax ) data.global.move = data.sliders[0].scrollMax
 
-    if( data.slider.move < -data.slider.scrollMax ) data.slider.move = -data.slider.scrollMax
-    if( data.scroll && data.scroll.move > data.scroll.scrollMax ) data.scroll.move = data.scroll.scrollMax
+    for (const key in data.sliders) {
+        let slider = data.sliders[key]
 
-    if( data.slider.shadowPrev ) data.slider.shadowPrev.style.opacity = 1
-    if( data.slider.shadowPrev && data.slider.move >= 0 ) data.slider.shadowPrev.style.opacity = 0
+        let localMove = slider.revert ?
+            slider.scrollMax - (data.global.move * slider.step) :
+            data.global.move * slider.step ;
 
-    if( data.slider.shadowNext ) data.slider.shadowNext.style.opacity = 1
-    if( data.slider.shadowNext && data.slider.move <= -data.slider.scrollMax ) data.slider.shadowNext.style.opacity = 0
+        slider.line.style.transform = slider.direction == 'horizontal' ? 
+            `translateX(${-localMove}px)` : 
+            `translateY(${-localMove}px)` ;
 
-    data.slider.line.style.transform = data.slider.direction == 'horizontal' ? 
-        `translateX(${data.slider.move}px)` : 
-        `translateY(${data.slider.move}px)` ;
-    if(data.scroll) data.scroll.thumb.style.transform = data.scroll.direction == 'horizontal' ? 
-        `translateX(${data.scroll.move}px)` : 
-        `translateY(${data.scroll.move}px)` ;
+        changeShadow(data.sliders[0].scrollMax, slider, data.global.move)
+    }
+
+    if (data.scroll) {
+        data.scroll.thumb.style.transform = data.scroll.direction == 'horizontal' ? 
+            `translateX(${data.global.move * data.scroll.step}px)` : 
+            `translateY(${data.global.move * data.scroll.step}px)` ;
+    }
 }
 
 function getItemCount(slider) {
@@ -135,79 +177,106 @@ function getItemCount(slider) {
     return count <= slider.items.length ? count : slider.items.length
 }
 
-function sliderTouch(event, data, elem) {
+function sliderTouch(event, type , data, elem, index) {
     event.preventDefault()
-    data.slider.line.classList.remove('slider-line--transition')
+
+    let elemDinamic = elem == 'slider' ? 
+        (index ? data.sliders[index] : data.sliders[0]) : data.scroll
+    let shift = type == 'mouse' ? 
+        (elemDinamic.direction == "horizontal" ? event.clientX : event.clientY) :
+        (elemDinamic.direction == "horizontal" ? event.touches[0].clientX : event.touches[0].clientY) ;
+    let localMove = data.global.move
+
+    for (const key in data.sliders) {
+        let slider = data.sliders[key]
+
+        slider.line.classList.remove('slider-line--transition')
+        slider.line.style.pointerEvents = 'none'
+    }
     if(data.scroll) data.scroll.thumb.classList.remove('scroll-thumb--transition')
 
-    let shift = data[elem].direction == "horizontal" ? event.clientX : event.clientY ;
-    let localLineMove = 0
-    let localThimbMove = 0
-
     document.addEventListener('mousemove', onMouseMove)
+    document.addEventListener('touchmove', onMouseMove)
     document.addEventListener('mouseup', onMouseUp)
+    document.addEventListener('touchend', onMouseUp)
 
-    function onMouseMove(e) { 
-        let localMove = shift - (data[elem].direction == "horizontal" ? e.clientX : e.clientY)
+    function onMouseMove(e) {
+        let move = (shift - (elemDinamic.direction == "horizontal" ? e.clientX : e.clientY)) / elemDinamic.step
+        localMove = data.global.move + (elemDinamic.revert || elem == 'scroll' ? -move : move)
 
-        if(elem == 'scroll') {
-            localLineMove = data.slider.move + localMove / data.global.step
-            if(data.scroll) localThimbMove = data.scroll.move - localMove
-        } else {
-            localLineMove = data.slider.move - localMove
-            if(data.scroll) localThimbMove = data.scroll.move + localMove * data.global.step
+        for (const key in data.sliders) {
+            let slider = data.sliders[key]
+            let sliderMove = slider.revert ? 
+                slider.scrollMax - (localMove * slider.step) : 
+                localMove * slider.step ;
+
+            slider.line.style.transform = slider.direction == 'horizontal' ? 
+                `translateX(${-sliderMove}px)`: 
+                `translateY(${-sliderMove}px)`;
+
+            changeShadow(data.sliders[0].scrollMax, slider, localMove)
         }
 
-        data.slider.line.style.transform = data.slider.direction == 'horizontal' ? 
-            `translateX(${localLineMove}px)` : 
-            `translateY(${localLineMove}px)` ;
         if(data.scroll) data.scroll.thumb.style.transform = data.scroll.direction == 'horizontal' ? 
-            `translateX(${localThimbMove}px)` : 
-            `translateY(${localThimbMove}px)` ;
+            `translateX(${localMove * data.scroll.step}px)`: 
+            `translateY(${localMove * data.scroll.step}px)`;
     }
 
     function onMouseUp(e) {
         document.removeEventListener('mousemove', onMouseMove)
         document.removeEventListener('mouseup', onMouseUp)
+        document.removeEventListener('touchmove', onMouseMove)
+        document.removeEventListener('touchend', onMouseUp)
 
-        data.slider.line.classList.add('slider-line--transition') 
-        data.slider.line.style.pointerEvents = 'all'
+        for (const key in data.sliders) {
+            let slider = data.sliders[key]
+    
+            slider.line.classList.add('slider-line--transition') 
+            slider.line.style.pointerEvents = 'all'
+        }
+
         if(data.scroll) data.scroll.thumb.classList.add('scroll-thumb--transition')
 
-        data.slider.move = localLineMove
-        if(data.scroll) data.scroll.move = localThimbMove
+        data.global.move = localMove
 
         rollScroll(data)
     }
 }
 
 function setEvents(data) {
-    if (data.scroll) data.scroll.thumb.onmousedown = (event) => { sliderTouch(event, data, 'scroll') }
-    if (data.scroll) data.scroll.thumb.ondragstart = () => { return false }
+    if (data.scroll) {
+        data.scroll.thumb.onmousedown = (event) => { sliderTouch(event, 'mouse', data, 'scroll') }
+        data.scroll.thumb.ontouchstart = (event) => { sliderTouch(event, 'touch', data, 'scroll') }
+        data.scroll.thumb.ondragstart = () => { return false }
+    }
 
-    if (data.slider.btnPrev) data.slider.btnPrev.onclick = () => { scrollButton(data, false) }
-    if (data.slider.btnNext) data.slider.btnNext.onclick = () => { scrollButton(data, true) }
-
-    data.slider.line.onmousedown = (event) => { sliderTouch(event, data, 'slider') }
-    data.slider.line.ondragstart = () => { return false }
-    data.slider.line.onwheel = (event) => scrollWheel(event, data)
+    if (scrollsData[data.name].btns.prev) { scrollsData[data.name].btns.prev.forEach(btn => {
+        btn.onclick = () => { scrollButton(data, false) }
+    })}
+    if (scrollsData[data.name].btns.next) { scrollsData[data.name].btns.next.forEach(btn => {
+        btn.onclick = () => { scrollButton(data, true) }
+    })}
+    
+    for (const key in data.sliders) {
+        let slider = data.sliders[key]
+    
+        slider.line.onmousedown = (event) => { sliderTouch(event, 'mouse', data, 'slider', key) }
+        slider.line.ontouchstart = (event) => { sliderTouch(event, 'touch', data, 'slider', key) }
+        slider.line.ondragstart = () => { return false }
+        slider.line.onwheel = (event) => scrollWheel(event, data, slider.revert) 
+    }
 }
 
 function initScroll(sliderId) {
     // создаём хранилище
     scrollsData[sliderId] = {}
     scrollsData[sliderId].name = sliderId
-    scrollsData[sliderId].global = {}
+    scrollsData[sliderId].global = {
+        move: 0,
+    }
+    scrollsData[sliderId].sliders = {}
 
-    // достаём важные блоки (slider)
-    scrollsData[sliderId].slider = {}
-    let sliderLink = scrollsData[sliderId].slider
-    sliderLink.elem = document.querySelector(`.${sliderId}-slider`)
-    sliderLink.line = sliderLink.elem.querySelector(`.${sliderId}-line`)
-    sliderLink.line.classList.add('slider-line--transition')
-    sliderLink.items = sliderLink.elem.querySelectorAll(`.${sliderId}-item`)
-
-    sliderUpdate(scrollsData[sliderId])
+    sliderUpdateDeep(scrollsData[sliderId])
 }
 
 function initScrollAll() {

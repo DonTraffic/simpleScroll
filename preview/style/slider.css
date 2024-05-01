@@ -1,1 +1,37 @@
-.slider{max-width:100%;width:100%;position:relative}.slider-line{width:auto;height:auto;display:flex}.slider-line--transition{transition:all 1s ease}.slider-btn:hover{cursor:pointer}.scroll{width:100%;border:1px solid rgba(204,204,204,0);overflow:hidden;transition:.4s ease}.scroll:hover{border:1px solid #ccc}.scroll-thumb{background-color:#ccc;height:100%;width:100%}.scroll-thumb:hover{cursor:grab}.scroll-thumb--transition{transition:all 1s ease}
+.slider {
+  max-width: 100%;
+  width: 100%;
+  position: relative;
+}
+.slider-line {
+  width: auto;
+  height: auto;
+  display: flex;
+}
+.slider-line--transition {
+  transition: all 1s ease;
+}
+.slider-btn:hover {
+  cursor: pointer;
+}
+
+.scroll {
+  width: 100%;
+  border: 1px solid rgba(204, 204, 204, 0);
+  overflow: hidden;
+  transition: 0.4s ease;
+}
+.scroll:hover {
+  border: 1px solid #cccccc;
+}
+.scroll-thumb {
+  background-color: #cccccc;
+  height: 100%;
+  width: 100%;
+}
+.scroll-thumb:hover {
+  cursor: grab;
+}
+.scroll-thumb--transition {
+  transition: all 1s ease;
+}/*# sourceMappingURL=slider.css.map */
