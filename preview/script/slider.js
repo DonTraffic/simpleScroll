@@ -41,6 +41,9 @@ function sliderUpdateDeep(data) {
 
         sliderLink.revert = sliderLink.elem.getAttribute('revert')
             sliderLink.revert = sliderLink.revert == 'true' ? true : false ;
+        sliderLink.anchor = sliderLink.elem.getAttribute('anchor')
+            sliderLink.anchor = sliderLink.anchor == 'true' ? true : false ;
+            if(sliderLink.anchor) sliderLink.moveOffset = 0
         sliderLink.direction = sliderLink.elem.getAttribute('direction')
             sliderLink.direction = sliderLink.direction == 'horizontal' || sliderLink.direction == 'vertical' ? 
                 sliderLink.direction : 'horizontal';
@@ -75,6 +78,8 @@ function sliderUpdateDeep(data) {
         }
         sliderLink.scrollMax = sliderLink.size.line - sliderLink.size.elem
         sliderLink.step = index ? sliderLink.scrollMax/scrollsData[data.name].sliders[0].scrollMax : 1
+        sliderLink.percent = 0
+        sliderLink.skip = false
     });
 
     // достаём важные блоки (scroll)
@@ -124,6 +129,12 @@ function scrollWheel(event, data, revert) {
         data.global.move -= event.deltaY : 
         data.global.move += event.deltaY ;
 
+    for (const key in data.sliders) {
+        let slider = data.sliders[key]
+        let itemSize = slider.itemSize + slider.styles.gap
+        slider.percent = (data.global.move/itemSize) * slider.step
+    }
+
     rollScroll(data)
 }
 
@@ -131,11 +142,13 @@ function scrollButton(data, direction) {
     event.preventDefault()
 
     let slider = data.sliders[0]
-    let localMove = (slider.direction == 'horizontal' ? 
-        slider.elem.offsetWidth : slider.elem.offsetHeight)
-        + slider.styles.padding/2
+    let localMove = slider.itemSize + slider.styles.gap
 
     direction ? data.global.move += localMove : data.global.move -= localMove ;
+    for (const key in data.sliders) {
+        let slider = data.sliders[key]
+        slider.percent = (data.global.move/localMove) * slider.step
+    }
 
     rollScroll(data)
 }
@@ -150,6 +163,17 @@ function rollScroll(data) {
         let localMove = slider.revert ?
             slider.scrollMax - (data.global.move * slider.step) :
             data.global.move * slider.step ;
+
+        if(slider.anchor) {
+            let sliderMove = (slider.itemSize + slider.styles.gap) * Math.round(slider.percent)
+
+            if (slider.revert) sliderMove = slider.scrollMax - sliderMove
+            if (sliderMove > slider.scrollMax) sliderMove = slider.scrollMax
+            if (sliderMove < 0) sliderMove = 0
+
+            slider.move = localMove - sliderMove
+            localMove = sliderMove
+        }
 
         slider.line.style.transform = slider.direction == 'horizontal' ? 
             `translateX(${-localMove}px)` : 
@@ -190,7 +214,9 @@ function sliderTouch(event, type , data, elem, index) {
     for (const key in data.sliders) {
         let slider = data.sliders[key]
 
-        slider.line.classList.remove('slider-line--transition')
+        slider.skip = slider.anchor && !elemDinamic.anchor
+
+        if (!slider.skip) slider.line.classList.remove('slider-line--transition')
         slider.line.style.pointerEvents = 'none'
     }
     if(data.scroll) data.scroll.thumb.classList.remove('scroll-thumb--transition')
@@ -202,17 +228,30 @@ function sliderTouch(event, type , data, elem, index) {
 
     function onMouseMove(e) {
         let move = (shift - (elemDinamic.direction == "horizontal" ? e.clientX : e.clientY)) / elemDinamic.step
+
         localMove = data.global.move + (elemDinamic.revert || elem == 'scroll' ? -move : move)
 
         for (const key in data.sliders) {
             let slider = data.sliders[key]
-            let sliderMove = slider.revert ? 
-                slider.scrollMax - (localMove * slider.step) : 
-                localMove * slider.step ;
+            let itemSize = (slider.itemSize + slider.styles.gap)
+            let sliderMove = localMove * slider.step
+                sliderMove = slider.revert ? slider.scrollMax - sliderMove : sliderMove ;
+            slider.percent = (localMove/itemSize) * slider.step
+            let anchorMove = slider.skip ? itemSize * Math.round(slider.percent) : sliderMove ;
 
-            slider.line.style.transform = slider.direction == 'horizontal' ? 
-                `translateX(${-sliderMove}px)`: 
-                `translateY(${-sliderMove}px)`;
+            if(key == 2){
+                console.log(key);
+                console.log(`slider.step: ${slider.step}`);
+                console.log(`slider.scrollMax: ${slider.scrollMax}`);
+
+                console.log(slider.percent * slider.step);
+            }
+
+            if (elemDinamic.anchor) anchorMove = anchorMove - slider.move
+            if (!elemDinamic.anchor && slider.revert) anchorMove = slider.scrollMax - anchorMove  
+
+            slider.line.style.transform = `translate${slider.direction == 'horizontal' ? 'X' : 'Y'}(
+                ${slider.anchor ? -anchorMove : -sliderMove}px)`
 
             changeShadow(data.sliders[0].scrollMax, slider, localMove)
         }
