@@ -28,9 +28,10 @@
 
 
 ```
+    <!-- Если слайдер 1н, то slider-id-slider--0 можно не ставить -->
     <div 
         id="slider-id" 
-        class="DTScroll slider-id-slider slider-id-slider--0" // Если слайдер 1н, то slider-id-slider--0 можно не ставить
+        class="DTScroll slider-id-slider slider-id-slider--0"
         points='{"0":1.5, "768": 1}' // можно убрать
         direction="vertical" // можно убрать но лучше всегда выставлять
         anchor="true" // можно убрать
@@ -49,7 +50,12 @@
         <div class="slider-id-btn-next"></div>
     </div>
 
-    <!-- Если нужны дополнительные слайдеры, которые связанны прокруткой с этим слайдером, то они обьявляются вот так: -->
+    <!-- 
+        Если нужны дополнительные слайдеры, 
+        которые связанны прокруткой с этим слайдером, 
+        то они обьявляются вот так: 
+    -->
+    
     <div 
         class="slider-id-slider slider-id-slider--1"
         points='{"0":1.5, "768": 1}' // можно убрать
