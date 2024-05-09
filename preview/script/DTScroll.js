@@ -239,14 +239,6 @@ function sliderTouch(event, type , data, elem, index) {
             slider.percent = (localMove/itemSize) * slider.step
             let anchorMove = slider.skip ? itemSize * Math.round(slider.percent) : sliderMove ;
 
-            if(key == 2){
-                console.log(key);
-                console.log(`slider.step: ${slider.step}`);
-                console.log(`slider.scrollMax: ${slider.scrollMax}`);
-
-                console.log(slider.percent * slider.step);
-            }
-
             if (elemDinamic.anchor) anchorMove = anchorMove - slider.move
             if (!elemDinamic.anchor && slider.revert) anchorMove = slider.scrollMax - anchorMove  
 
