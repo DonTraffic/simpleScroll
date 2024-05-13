@@ -111,7 +111,7 @@ function sliderUpdateDeep(name) {
             scrollLink.size.elem = scrollLink.direction == 'horizontal' ? 
                 scrollLink.elem.offsetWidth : scrollLink.elem.offsetHeight ;
             scrollLink.size.thumb = scrollLink.anchor ? 
-                scrollLink.size.elem / (sliderLink.items.length-1) :
+            scrollLink.size.elem / (sliderLink.items.length <= 2 ? sliderLink.items.length : sliderLink.items.length-1) :
                 (scrollLink.size.elem/100) * ((sliderLink.size.elem*100) / sliderLink.size.line) ;
         scrollLink.direction == 'horizontal' ? 
             scrollLink.thumb.style.width = `${scrollLink.size.thumb}px` :
