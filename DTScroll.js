@@ -22,7 +22,9 @@ function sliderValidate(data) {
     ) data.slider.scrollMax = 0
 }
 
-function sliderUpdateDeep(data) {
+function sliderUpdateDeep(name) {
+    let data = scrollsData[name]
+
     // достаём важные блоки (sliders)
     document.querySelectorAll(`.${data.name}-slider`).forEach((slider, index) => {
         scrollsData[data.name].sliders[index] = {}
@@ -30,7 +32,7 @@ function sliderUpdateDeep(data) {
 
         sliderLink.elem = document.querySelector(`.${data.name}-slider--${index}`)
         sliderLink.line = sliderLink.elem.querySelector(`.${data.name}-line`)
-        sliderLink.line.classList.add('slider-line--transition')
+        sliderLink.line.classList.remove('slider-line--transition')
         sliderLink.items = sliderLink.elem.querySelectorAll(`.${data.name}-item`)
         sliderLink.shadowPrev = document.querySelector(`.${data.name}-shadow-prev`) ?
             sliderLink.elem.querySelector(`.${data.name}-shadow-prev`) :
@@ -65,6 +67,9 @@ function sliderUpdateDeep(data) {
                 (sliderLink.itemsCount > 0 ? sliderLink.itemsCount-1 : sliderLink.itemsCount)
             ) / sliderLink.itemsCount   
             sliderLink.items.forEach(item => { 
+                item.style.width = `auto`
+                item.style.height = `auto`
+
                 sliderLink.direction == 'horizontal' ? 
                     item.style.width = `${sliderLink.itemSize}px` :
                     item.style.height = `${sliderLink.itemSize}px` 
@@ -79,7 +84,11 @@ function sliderUpdateDeep(data) {
         sliderLink.scrollMax = sliderLink.size.line - sliderLink.size.elem
         sliderLink.step = index ? sliderLink.scrollMax/scrollsData[data.name].sliders[0].scrollMax : 1
         sliderLink.percent = 0
+        sliderLink.move = 0
         sliderLink.skip = false
+
+        sliderLink.line.classList.add('slider-line--transition')
+        sliderLink.line.style.userSelect = 'none'
     });
 
     // достаём важные блоки (scroll)
@@ -90,19 +99,29 @@ function sliderUpdateDeep(data) {
 
         scrollLink.elem = document.querySelector(`.${data.name}-scroll`)
         scrollLink.thumb = document.querySelector(`.${data.name}-thumb`)
-        scrollLink.thumb.classList.add('scroll-thumb--transition')
+        scrollLink.anchor = scrollLink.elem.getAttribute('anchor')
+            if(scrollLink.anchor) {
+                scrollLink.moveOffset = 0
+                sliderLink = scrollsData[data.name].sliders[Number(scrollLink.anchor)]
+            }
         scrollLink.direction = scrollLink.elem.getAttribute('direction') ? 
             scrollLink.elem.getAttribute('direction') : 
             (scrollLink.elem.offsetWidth > scrollLink.elem.offsetHeight ? 'horizontal' : 'vertical') ;
         scrollLink.size = {}
             scrollLink.size.elem = scrollLink.direction == 'horizontal' ? 
                 scrollLink.elem.offsetWidth : scrollLink.elem.offsetHeight ;
-            scrollLink.size.thumb = (scrollLink.size.elem/100) * ((sliderLink.size.elem*100) / sliderLink.size.line)
+            scrollLink.size.thumb = scrollLink.anchor ? 
+                scrollLink.size.elem / (sliderLink.items.length-1) :
+                (scrollLink.size.elem/100) * ((sliderLink.size.elem*100) / sliderLink.size.line) ;
         scrollLink.direction == 'horizontal' ? 
             scrollLink.thumb.style.width = `${scrollLink.size.thumb}px` :
             scrollLink.thumb.style.height = `${scrollLink.size.thumb}px` ;
         scrollLink.scrollMax = scrollLink.size.elem - scrollLink.size.thumb
         scrollLink.step = scrollLink.scrollMax/sliderLink.scrollMax
+        scrollLink.percent = 0
+        scrollLink.skip = false
+
+        scrollLink.thumb.classList.add('scroll-thumb--transition')
     } else {scrollsData[data.name].scroll = false}
 
     // достаём все кнопки
@@ -118,7 +137,7 @@ function sliderUpdateDeep(data) {
 
 function updateScrollAll() {
     document.querySelectorAll('.DTScroll').forEach((scroll) => {
-        sliderUpdateDeep(scrollsData[scroll.id])
+        sliderUpdateDeep(scroll.id)
     })
 }
 
@@ -153,6 +172,22 @@ function scrollButton(data, direction) {
     rollScroll(data)
 }
 
+function changeButton(data, move) {
+    let moveMin = move < 0 + data.sliders[0].itemSize
+    let moveMax = move > data.sliders[0].scrollMax - data.sliders[0].itemSize
+
+    data.btns.prev.forEach(btn => {
+        moveMin ?
+            btn.classList.add('slider-btn--disable') :
+            btn.classList.remove('slider-btn--disable') ;
+    })
+    data.btns.next.forEach(btn => {
+        moveMax ?
+            btn.classList.add('slider-btn--disable') :
+            btn.classList.remove('slider-btn--disable') ;
+    })
+}
+
 function rollScroll(data) {
     if( data.global.move < 0 ) data.global.move = 0
     if( data.global.move > data.sliders[0].scrollMax ) data.global.move = data.sliders[0].scrollMax
@@ -175,17 +210,25 @@ function rollScroll(data) {
             localMove = sliderMove
         }
 
-        slider.line.style.transform = slider.direction == 'horizontal' ? 
-            `translateX(${-localMove}px)` : 
-            `translateY(${-localMove}px)` ;
+        slider.line.style.transform = `translate${slider.direction == 'horizontal' ? 'X' : 'Y'}(${-localMove}px)`
 
         changeShadow(data.sliders[0].scrollMax, slider, data.global.move)
+        changeButton(data, data.global.move)
     }
 
-    if (data.scroll) {
-        data.scroll.thumb.style.transform = data.scroll.direction == 'horizontal' ? 
-            `translateX(${data.global.move * data.scroll.step}px)` : 
-            `translateY(${data.global.move * data.scroll.step}px)` ;
+    if(data.scroll) {
+        let scroll = data.scroll
+        scroll.percent = (data.global.move*scroll.step)/scroll.size.thumb
+        
+        let scrollMove = scroll.anchor ? 
+            scroll.size.thumb * Math.round(scroll.percent) : 
+            data.global.move*scroll.step ;
+
+        if (scroll.anchor) {
+            scroll.move = (data.global.move*scroll.step) - (scroll.size.thumb * Math.round(scroll.percent))
+        } else {scroll.move = 0}
+
+        scroll.thumb.style.transform = `translate${scroll.direction == 'horizontal' ? 'X' : 'Y'}(${scrollMove}px)`
     }
 }
 
@@ -201,14 +244,12 @@ function getItemCount(slider) {
     return count <= slider.items.length ? count : slider.items.length
 }
 
-function sliderTouch(event, type , data, elem, index) {
-    event.preventDefault()
-
+function sliderTouch(event, type, data, elem, index) {
     let elemDinamic = elem == 'slider' ? 
         (index ? data.sliders[index] : data.sliders[0]) : data.scroll
-    let shift = type == 'mouse' ? 
-        (elemDinamic.direction == "horizontal" ? event.clientX : event.clientY) :
-        (elemDinamic.direction == "horizontal" ? event.touches[0].clientX : event.touches[0].clientY) ;
+    let clientY = type == 'mouse' ? event.clientY : event.touches[0].clientY ;
+    let clientX = type == 'mouse' ? event.clientX : event.touches[0].clientX ;
+    let shift = elemDinamic.direction == "horizontal" ? clientX : clientY ;
     let localMove = data.global.move
 
     for (const key in data.sliders) {
@@ -217,9 +258,15 @@ function sliderTouch(event, type , data, elem, index) {
         slider.skip = slider.anchor && !elemDinamic.anchor
 
         if (!slider.skip) slider.line.classList.remove('slider-line--transition')
-        slider.line.style.pointerEvents = 'none'
     }
-    if(data.scroll) data.scroll.thumb.classList.remove('scroll-thumb--transition')
+    if(data.scroll) {
+        let scroll = data.scroll
+
+        scroll.skip = scroll.anchor && elem == 'scroll'
+
+        if (scroll.skip || elem == 'scroll') scroll.thumb.classList.remove('scroll-thumb--transition')
+        if (!scroll.anchor) scroll.thumb.classList.remove('scroll-thumb--transition')
+    }
 
     document.addEventListener('mousemove', onMouseMove)
     document.addEventListener('touchmove', onMouseMove)
@@ -227,11 +274,13 @@ function sliderTouch(event, type , data, elem, index) {
     document.addEventListener('touchend', onMouseUp)
 
     function onMouseMove(e) {
-        let move = (shift - (elemDinamic.direction == "horizontal" ? e.clientX : e.clientY)) / elemDinamic.step
+        let localClientY = type == 'mouse' ? e.clientY : e.touches[0].clientY ;
+        let localClientX = type == 'mouse' ? e.clientX : e.touches[0].clientX ;
+        let move = (shift - (elemDinamic.direction == "horizontal" ? localClientX : localClientY)) / elemDinamic.step
 
         localMove = data.global.move + (elemDinamic.revert || elem == 'scroll' ? -move : move)
 
-        for (const key in data.sliders) {
+        for (const key in data.sliders) {            
             let slider = data.sliders[key]
             let itemSize = (slider.itemSize + slider.styles.gap)
             let sliderMove = localMove * slider.step
@@ -240,17 +289,30 @@ function sliderTouch(event, type , data, elem, index) {
             let anchorMove = slider.skip ? itemSize * Math.round(slider.percent) : sliderMove ;
 
             if (elemDinamic.anchor) anchorMove = anchorMove - slider.move
-            if (!elemDinamic.anchor && slider.revert) anchorMove = slider.scrollMax - anchorMove  
+            if (!elemDinamic.anchor && slider.revert) anchorMove = slider.scrollMax - anchorMove
 
+            slider.line.style.pointerEvents = 'none'
             slider.line.style.transform = `translate${slider.direction == 'horizontal' ? 'X' : 'Y'}(
                 ${slider.anchor ? -anchorMove : -sliderMove}px)`
 
             changeShadow(data.sliders[0].scrollMax, slider, localMove)
+            changeButton(data, localMove)
         }
 
-        if(data.scroll) data.scroll.thumb.style.transform = data.scroll.direction == 'horizontal' ? 
-            `translateX(${localMove * data.scroll.step}px)`: 
-            `translateY(${localMove * data.scroll.step}px)`;
+        if(data.scroll) {
+            let scroll = data.scroll
+            if (scroll.anchor) {
+                let itemSize = scroll.size.thumb
+                    scroll.percent = (localMove/itemSize) * scroll.step
+                let anchorMove = scroll.skip ? localMove : itemSize * Math.round(scroll.percent) ;
+
+                scroll.thumb.style.transform = `translate${scroll.direction == 'horizontal' ? 'X' : 'Y'}(
+                    ${elem == 'scroll' ? localMove*scroll.step - scroll.move : anchorMove}px)`
+            } else {
+                scroll.thumb.style.transform = `translate${scroll.direction == 'horizontal' ? 'X' : 'Y'}(
+                    ${localMove*scroll.step}px)`
+            }
+        }
     }
 
     function onMouseUp(e) {
@@ -307,7 +369,7 @@ function initScroll(sliderId) {
     }
     scrollsData[sliderId].sliders = {}
 
-    sliderUpdateDeep(scrollsData[sliderId])
+    sliderUpdateDeep(sliderId)
 }
 
 function initScrollAll() {
@@ -319,8 +381,7 @@ function initScrollAll() {
 }
 
 
-
-const slider = {
+const DTScroll = {
     initScrollAll,
     initScroll,
     updateScrollAll,
@@ -328,4 +389,4 @@ const slider = {
     scrollsData
 }
   
-export  { slider }
+export  { DTScroll }

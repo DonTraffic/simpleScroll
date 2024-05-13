@@ -13,8 +13,14 @@
         }
     }
 
-    &-btn:hover{
-        cursor: pointer;
+    &-btn{
+        &:hover{
+            cursor: pointer;
+        }
+
+        &--disable{
+            display: none;
+        }
     }
 }
 

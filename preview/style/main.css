@@ -362,4 +362,8 @@ section {
 .three-shadow-next {
   right: 0;
   background: linear-gradient(-90deg, rgb(65, 65, 65) 0%, rgba(204, 204, 204, 0) 100%);
+}
+
+.slider-btn--disable {
+  opacity: 0;
 }/*# sourceMappingURL=main.css.map */

@@ -14,6 +14,9 @@
 .slider-btn:hover {
   cursor: pointer;
 }
+.slider-btn--disable {
+  display: none;
+}
 
 .scroll {
   width: 100%;
