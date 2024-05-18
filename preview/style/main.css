@@ -244,6 +244,7 @@ section {
 }
 
 .three {
+  padding-bottom: 40px;
   display: flex;
   gap: 24px;
 }
@@ -344,6 +345,13 @@ section {
 .three-btn-next {
   right: 0;
   translate: -50% -50%;
+}
+.three-scroll {
+  position: absolute;
+  bottom: 0px;
+}
+.three-scroll--transition {
+  transition: all 1s ease;
 }
 .three-shadow-prev, .three-shadow-next {
   position: absolute;

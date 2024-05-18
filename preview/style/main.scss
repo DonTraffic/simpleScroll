@@ -319,6 +319,7 @@ section{
 }
 
 .three{
+    padding-bottom: 40px;
     display: flex;
     gap: 24px;
 
@@ -446,6 +447,15 @@ section{
         &-next{
             right: 0;
             translate: -50% -50%;
+        }
+    }
+
+    &-scroll{
+        position: absolute;
+        bottom: 0px;
+
+        &--transition{
+            transition: all 1s ease;
         }
     }
 

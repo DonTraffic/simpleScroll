@@ -173,8 +173,9 @@ function scrollButton(data, direction) {
 }
 
 function changeButton(data, move) {
-    let moveMin = move < 0 + data.sliders[0].itemSize
-    let moveMax = move > data.sliders[0].scrollMax - data.sliders[0].itemSize
+    let itemSize = data.sliders[0].itemSize/2
+    let moveMin = move < 0 + itemSize
+    let moveMax = move > data.sliders[0].scrollMax - itemSize
 
     data.btns.prev.forEach(btn => {
         moveMin ?
@@ -255,17 +256,18 @@ function sliderTouch(event, type, data, elem, index) {
     for (const key in data.sliders) {
         let slider = data.sliders[key]
 
-        slider.skip = slider.anchor && !elemDinamic.anchor
+        slider.skip = elem == 'slider' ? 
+            !slider.anchor || (index == key ? true : false) : 
+            !slider.anchor ;
 
-        if (!slider.skip) slider.line.classList.remove('slider-line--transition')
+        if (slider.skip) slider.line.classList.remove('slider-line--transition')
     }
     if(data.scroll) {
         let scroll = data.scroll
 
-        scroll.skip = scroll.anchor && elem == 'scroll'
+        scroll.skip = elem == 'scroll' ? true : !scroll.anchor ;
 
-        if (scroll.skip || elem == 'scroll') scroll.thumb.classList.remove('scroll-thumb--transition')
-        if (!scroll.anchor) scroll.thumb.classList.remove('scroll-thumb--transition')
+        if (scroll.skip) scroll.thumb.classList.remove('scroll-thumb--transition')
     }
 
     document.addEventListener('mousemove', onMouseMove)
@@ -286,7 +288,7 @@ function sliderTouch(event, type, data, elem, index) {
             let sliderMove = localMove * slider.step
                 sliderMove = slider.revert ? slider.scrollMax - sliderMove : sliderMove ;
             slider.percent = (localMove/itemSize) * slider.step
-            let anchorMove = slider.skip ? itemSize * Math.round(slider.percent) : sliderMove ;
+            let anchorMove = slider.skip ? sliderMove : itemSize * Math.round(slider.percent) ;
 
             if (elemDinamic.anchor) anchorMove = anchorMove - slider.move
             if (!elemDinamic.anchor && slider.revert) anchorMove = slider.scrollMax - anchorMove
