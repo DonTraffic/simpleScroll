@@ -32,9 +32,10 @@
         id="slider-id" 
         class="DTScroll slider-id-slider slider-id-slider--0"
         points='{"0":1.5, "768": 1}' // можно убрать
-        direction="vertical" // можно убрать но лучше всегда выставлять
-        anchor="true" // можно убрать
+        direction="vertical" // можно убрать, но лучше всегда выставлять
+        anchor="0" // можно убрать
         revert="false" // можно убрать
+        disable="false" // можно убрать
     >
         <div class="slider-id-btn-prev"></div>
         <div class="slider-id-shadow-prev"></div>
@@ -58,9 +59,10 @@
     <div 
         class="slider-id-slider slider-id-slider--1"
         points='{"0":1.5, "768": 1}' // можно убрать
-        direction="vertical" // можно убрать но лучше всегда выставлять
+        direction="vertical" // можно убрать, но лучше всегда выставлять
         anchor="true" // можно убрать
         revert="false" // можно убрать
+        disable="false" // можно убрать
     >
         <div class="slider-id-btn-prev"></div>
         <div class="slider-id-shadow-prev"></div>
@@ -88,6 +90,8 @@
 **anchor** -- 'true' или 'false' -- будет ли прокрутка цепляться за блоки (то есть блочная прокрутка) (можно повесить на .***ИМЯ*-slider**, а так же на .***ИМЯ*-scroll**, но вместо **true** нужно писать **id-count** слайдера. Например, если нужно следить за id-slider--0 слайдером, то пишем просто 0)
 
 **revert** -- 'true' или 'fasle' -- прокрутка в другую сторону (можно повесить на .***ИМЯ*-slider**)
+
+**disable** -- 'true' или 'fasle' -- отключает события (скрол, прикосновения, колёсико мыши), но элемент будет передвигаться за счёт других (можно повесить на .***ИМЯ*-slider** и .***ИМЯ*-scroll**)
 
 
 ### *Важное:*  
